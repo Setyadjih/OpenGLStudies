@@ -1,27 +1,110 @@
-#include "TestClearColor.h"
+#include "TestTexture2D.h"
 
-#include <Renderer.h>
+#include"Renderer.h"
 #include "imgui/imgui.h"
+
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 
 namespace test
 {
-    TestClearColor::TestClearColor()
-        : m_ClearColor{ 0.2f, 0.3f, 0.8f, 1.0f}
+    TestTexture2D::TestTexture2D()
+        : m_Proj(glm::ortho(0.0f, 960.0f, 0.0f, 540.0f, -1.0f, 1.0f)),
+        m_View(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0))),
+        m_TranslationA(200, 200, 0), m_TranslationB(400, 200, 0)
+    {
+        // Vertex positions
+        float positions[] = {
+            -50.0f, -50.0f, 0.0f, 0.0f, // 0
+             50.0f, -50.0f, 1.0f, 0.0f, // 1
+             50.0f,  50.0f, 1.0f, 1.0f, // 2
+            -50.0f,  50.0f, 0.0f, 1.0f  // 3
+        };
+
+        // Setup Index Buffer to reduce repeated positions for vertices
+        unsigned int indices[] = {
+            0, 1, 2, // bottom-right triangle
+            2, 3, 0  // bottom-left triangle
+        };
+
+        // Setup Blending, disabled by default
+        GLCall(glEnable(GL_BLEND));
+        // define source and destination for blending
+        GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+
+        m_VAO = std::make_unique<VertexArray>();
+
+        // Buffers send data to the GPU
+        m_VertexBuffer = std::make_unique<VertexBuffer>(positions, 4 * 4 * sizeof(float));
+
+        // Enable and describe vertex attributes. This is done on the vao
+        // Each vertex position is 2 floats long, so we mark this in the layout
+        VertexBufferLayout layout;
+        layout.Push<float>(2);
+        layout.Push<float>(2);
+        m_VAO->AddBuffer(*m_VertexBuffer, layout);
+
+        // index buffers *must* be unsigned ints
+        m_IndexBuffer = std::make_unique<IndexBuffer>(indices, 6);
+
+        m_Shader = std::make_unique<Shader>("res/shaders/Basic.shader");
+        m_Shader->Bind();
+        m_Shader->SetUniform4f("u_Color", 0.8f, 0.3f, 0.8f, 1.0f);
+        
+        m_Texture = std::make_unique<Texture>("res/textures/transparentbg.png");
+        m_Shader->SetUniform1i("u_Texture", 0);
+    }
+    TestTexture2D::~TestTexture2D()
     {
     }
-    TestClearColor::~TestClearColor()
+    void TestTexture2D::OnUpdate(float deltaTime)
     {
     }
-    void TestClearColor::OnUpdate(float deltaTime)
+    void TestTexture2D::OnRender()
     {
-    }
-    void TestClearColor::OnRender()
-    {
-        GLCall(glClearColor(m_ClearColor[0], m_ClearColor[1], m_ClearColor[2], m_ClearColor[3]));
+        GLCall(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
         GLCall(glClear(GL_COLOR_BUFFER_BIT));
+
+        Renderer renderer;
+
+        // Texture is bound to slot 0 by default
+        m_Texture->Bind();
+
+        // Render first object
+        {
+            // matrix multiplication, order matters
+            glm::mat4 model = glm::translate(glm::mat4(1.0f), m_TranslationA);
+            glm::mat4 mvp = m_Proj * m_View * model;
+            m_Shader->Bind();
+
+            m_Shader->SetUniformMat4f("u_MVP", mvp);
+            renderer.Draw(*m_VAO, *m_IndexBuffer, *m_Shader);
+        }
+
+        // Change model translation and render second object
+        {
+            // matrix multiplication, order matters
+            glm::mat4 model = glm::translate(glm::mat4(1.0f), m_TranslationB);
+            glm::mat4 mvp = m_Proj * m_View * model;
+            m_Shader->Bind();
+
+            m_Shader->SetUniformMat4f("u_MVP", mvp);
+            renderer.Draw(*m_VAO, *m_IndexBuffer, *m_Shader);
+        }
     }
-    void TestClearColor::OnImGuiRender()
+    void TestTexture2D::OnImGuiRender()
     {
-        ImGui::ColorEdit4("Clear Color", m_ClearColor);
+        // ImGui Example Window
+        {
+            static float f = 0.0f;
+
+            ImGui::SliderFloat3("Translation A", &m_TranslationA.x, 0.0f, 800.0f);
+            ImGui::SliderFloat3("Translation B", &m_TranslationB.x, 0.0f, 800.0f);
+            ImGui::Text(
+                "Application average %.3f ms/frame (%.1f FPS)", 
+                1000.0f / ImGui::GetIO().Framerate, 
+                ImGui::GetIO().Framerate
+            );
+        }
     }
 }

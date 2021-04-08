@@ -23,6 +23,7 @@
 #include "imgui/imgui_impl_opengl3.h"
 
 #include "tests/TestClearColor.h"
+#include "tests/TestTexture2D.h"
 
 int main(void)
 {
@@ -60,62 +61,6 @@ int main(void)
     std::cout << glGetString(GL_VERSION) << std::endl;
     // Scope to trigger the stack destructors of buffers classes before glfw context is deleted
     {
-        //// Vertex positions
-        //float positions[] = {
-        //    -50.0f, -50.0f, 0.0f, 0.0f, // 0
-        //     50.0f, -50.0f, 1.0f, 0.0f, // 1
-        //     50.0f,  50.0f, 1.0f, 1.0f, // 2
-        //    -50.0f,  50.0f, 0.0f, 1.0f  // 3
-        //};
-
-        //// Setup Index Buffer to reduce repeated positions for vertices
-        //unsigned int indices[] = {
-        //    0, 1, 2, // bottom-right triangle
-        //    2, 3, 0  // bottom-left triangle
-        //};
-
-        // Setup Blending, disabled by default
-        GLCall(glEnable(GL_BLEND));
-        // define source and destination for blending
-        GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-
-        //// Buffers send data to the GPU
-        //VertexArray va;
-        //VertexBuffer vb(positions, 4 * 4 * sizeof(float));
-
-        //// Enable and describe vertex attributes. This is done on the vao
-        //// Each vertex position is 2 floats long, so we mark this in the layout
-        //VertexBufferLayout layout;
-        //layout.Push<float>(2);
-        //layout.Push<float>(2);
-        //va.AddBuffer(vb, layout);
-
-        //// index buffers *must* be unsigned ints
-        //IndexBuffer ib(indices, 6);
-
-        //// defining projection boundaries
-        //glm::mat4 proj = glm::ortho(
-        //    0.0f, 960.0f, // x
-        //    0.0f, 540.0f, // y
-        //    -1.0f, 1.0f   // z
-        //);
-        //glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0));
-
-        //Shader shader("res/shaders/Basic.shader");
-        //shader.Bind();
-        //shader.SetUniform4f("u_Color", 0.8f, 0.3f, 0.8f, 1.0f);
-
-        //Texture texture("res/textures/transparentbg.png");
-        //// Texture is bound to slot 0 by default
-        //texture.Bind();
-        //shader.SetUniform1i("u_Texture", 0);
-
-        //// unbind test
-        //va.Unbind();
-        //ib.Unbind();
-        //vb.Unbind();
-        //shader.Unbind();
-
         Renderer renderer;
 
             // Setup ImGUI
@@ -125,18 +70,13 @@ int main(void)
         ImGui::GetStyle().WindowRounding = 5.0f;
         ImGui_ImplOpenGL3_Init((char*) glGetString(330));
 
-        //glm::vec3 translationA(200, 200, 0);
-        //glm::vec3 translationB(400, 400, 0);
-
-        //float r = 0.0f;
-        //float increment = 0.01f;
-
+        // Create and register Tests
         test::Test* currentTest = nullptr;
         test::TestMenu* testMenu = new test::TestMenu(currentTest);
         currentTest = testMenu;
 
         testMenu->RegisterTest<test::TestClearColor>("Clear Color");
-
+        testMenu->RegisterTest<test::TestTexture2D>("2D Texture");
 
         /* Loop until the user closes the window */
         while (!glfwWindowShouldClose(window))
@@ -163,44 +103,6 @@ int main(void)
                 currentTest->OnImGuiRender();
                 ImGui::End();
             }
-
-            //{
-            //    // matrix multiplication, order matters
-            //    glm::mat4 model = glm::translate(glm::mat4(1.0f), translationA);
-            //    glm::mat4 mvp = proj * view * model;
-            //    shader.Bind();
-
-            //    shader.SetUniformMat4f("u_MVP", mvp);
-            //    renderer.Draw(va, ib, shader);
-            //}
-
-            //{
-            //    // matrix multiplication, order matters
-            //    glm::mat4 model = glm::translate(glm::mat4(1.0f), translationB);
-            //    glm::mat4 mvp = proj * view * model;
-
-            //    shader.SetUniformMat4f("u_MVP", mvp);
-            //    renderer.Draw(va, ib, shader);
-            //}
-
-            //// Animating red channel per frame
-            //if (r > 1.0f) { increment = -0.01f; }
-            //else if (r < 0.0f) { increment = 0.01f; }
-
-            //r += increment;
-
-            //// ImGui Example Window
-            //{
-            //    static float f = 0.0f;
-
-            //    ImGui::SliderFloat3("Translation A", &translationA.x, 0.0f, 800.0f);
-            //    ImGui::SliderFloat3("Translation B", &translationB.x, 0.0f, 800.0f);
-            //    ImGui::Text(
-            //        "Application average %.3f ms/frame (%.1f FPS)", 
-            //        1000.0f / ImGui::GetIO().Framerate, 
-            //        ImGui::GetIO().Framerate
-            //    );
-            //}
 
             // ImGui Render
             ImGui::Render();
